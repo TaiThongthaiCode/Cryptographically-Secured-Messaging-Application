@@ -48,6 +48,9 @@ class network_interface:
 		status = False
 		msg = b''
 
+		
+
+
 		while True:
 			msgs = sorted(os.listdir(in_dir))
 			if len(msgs) - 1 > self.last_read: 
