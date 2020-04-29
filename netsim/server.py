@@ -1,6 +1,12 @@
 import os, sys, getopt, time
 
+from base64 import b64decode
+
+import json
 import pyDHE
+
+from adapter import *
+import session as s 
 
 from netinterface import network_interface
 
@@ -14,35 +20,41 @@ OWN_ADDR = 'A'
 CLIENT_ADDR = 'B'
 ADDR_SPACE = 'ABC'
 
-NETIF = network_interface(NET_PATH, OWN_ADDR)
 
-def listen_server_key():
-
-    while True:
-        status, msg = NETIF.receive_msg()
-
-        if status:
-            return msg 
-        
-
-def send_public_key():
-
-    Server = pyDHE.new()
-    msg = str(Server.getPublicKey())
-    dst = CLIENT_ADDR
-
-    NETIF.send_msg(dst, msg.encode('utf-8'))
-
-    return Server
 
 def main():
 
-    clientkey = int(listen_server_key())
-    Server = send_public_key()
-    
-    SESSIONKEY = Server.update(clientkey)
+    server = Adapter(NET_PATH, OWN_ADDR)
 
-    print(SESSIONKEY)
+    status, msg = server.listen()
+    clientkey = int(msg)
+    Server = server.send_public_key(CLIENT_ADDR)
+    SESSIONKEY = Server.update(clientkey)
+    print("Sucessfully created a secure channel")
+
+    session = s.Session(SESSIONKEY)
+
+    print('Main loop started...')
+    while True:
+    
+        status, msg = server.listen()
+        
+        if status:
+            server.send("Success", CLIENT_ADDR)
+            print("Success: Message received")
+
+            msg = json.loads(msg.decode("utf-8"))
+            print(type(msg), msg)
+
+            #all of these are in bytes
+            header = b64decode(msg['header'])
+            ciphertext = b64decode(msg['ciphertext'])
+            tag = b64decode(msg['tag'])
+
+            #plaintext in bytes
+            plaintext= session.decrypt(header, ciphertext, tag)
+
+            print(header, plaintext)
 
 if __name__ == "__main__":
 

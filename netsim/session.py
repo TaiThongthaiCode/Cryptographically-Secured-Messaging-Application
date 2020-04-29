@@ -15,9 +15,11 @@ class Session:
 
         #conversion of DH Key to 16 bytes
 
+        key = str(key)
+        key = key.encode('utf-8')[:16]
         self.key = key
 
-    def encryption(self, header, data):
+    def encrypt(self, header, data):
         """
         @Param: Header - header in bytes
         @Param: data - Data to be encrypted, in bytes
@@ -29,13 +31,10 @@ class Session:
         cipher.update(header)
         ciphertext, tag = cipher.encrypt_and_digest(data)
 
-        # json_k = [ 'nonce', 'header', 'ciphertext', 'tag' ]
-        # json_v = [ b64encode(x).decode('utf-8') for x in cipher.nonce, header, ciphertext, tag ]
-        # result = json.dumps(dict(zip(json_k, json_v)))
 
-        return header, ciphertext, tag
+        return ciphertext, tag
 
-    def decryption(self, header, ciphertext, tag):
+    def decrypt(self, header, ciphertext, tag):
         """
         @Param: ciphertext - json formatted ciphertext
         """
