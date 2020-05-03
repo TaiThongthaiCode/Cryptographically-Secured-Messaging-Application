@@ -1,9 +1,7 @@
-"""
-"""
-
 import pyDHE
 import json
 import shutil
+import os
 from netinterface import network_interface
 from base64 import b64encode
 
@@ -32,7 +30,6 @@ class Adapter:
         else:
             return False
 
-
     def send_public_key(self, dst):
 
         User = pyDHE.new()
@@ -42,6 +39,7 @@ class Adapter:
 
         return User
 
+    #USER COMMANDS
     def create_header(self, type, command):
         header = {}
         header["from"] = self.OWN_ADDR
@@ -60,32 +58,48 @@ class Adapter:
 
         return msg
 
-    # OS UTILITIES FUNCTIONS
-    # https://www.pythoncentral.io/how-to-recursively-copy-a-directory-folder-in-python/
+    def getTitle(self, src_path):
+        """
+        Gets the title of the Document
+        """
+        title = ""
+        len_path = len(src_path)-1
+        while(src_path[len_path] != "/" and len_path >= 0):
+            title = src_path[len_path] + title
+            len_path -= 1
 
-    def copyDirectory(src, dest):
-    try:
-        shutil.copytree(src, dest)
-    # Directories are the same
-    except shutil.Error as e:
-        print('Directory not copied. Error: %s' % e)
-    # Any error saying that the directory doesn't exist
-    except OSError as e:
-        print('Directory not copied. Error: %s' % e)
+        return title
 
-    def copy(src, dest):
-    try:
-        shutil.copytree(src, dest)
-    except OSError as e:
-        # If the error was caused because the source wasn't a directory
-        if e.errno == errno.ENOTDIR:
-            shutil.copy(src, dest)
-        else:
-            print('Directory not copied. Error: %s' % e)
+    def upload_file_helper(self, src_path):
+        """
+        Uploads the File
+        """
+        title = self.getTitle(src_path)
+        print("TITLE: " + title)
 
-    def _createFolder(self, directory):
-        try:
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-        except OSError:
-            print ('Error: Creating directory. ' +  directory)
+        script_dir = os.path.abspath(src_path)
+        file = open(script_dir)
+        body = file.read()
+        plaintext = title + "\n" + body
+        plaintext = plaintext.encode('utf-8')
+        return plaintext
+
+    def mk_dir(self, path):
+        """
+        Making a new directory
+        """
+        if(path[-1] == "/"):
+            path = path[:-1]
+        os.mkdir(path)
+
+    def del_directory(self, src_path):
+        """
+        Deletes an empty directory
+        """
+        os.rmdir(src_path)
+
+    def del_file(self, src_path):
+        """
+        Deletes a file
+        """
+        os.remove(src_path)
