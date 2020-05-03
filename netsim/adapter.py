@@ -25,6 +25,7 @@ class Adapter:
         """
         @params: msg, dst
         """
+
         if self.NETIF.send_msg(dst, msg.encode('utf-8')):
             return True
         else:
@@ -40,11 +41,15 @@ class Adapter:
         return User
 
     #USER COMMANDS
-    def create_header(self, type, command):
+
+    #remove nonce as zero and put in appropriate sequence number value
+    def create_header(self, typee, command, nonce=0, success=None):
         header = {}
         header["from"] = self.OWN_ADDR
-        header["type"] = type
+        header["type"] = typee
         header["command"] = command
+        header["nonce"] = nonce
+        header["success"] = success
         header = json.dumps(header).encode('utf-8')
 
         return header

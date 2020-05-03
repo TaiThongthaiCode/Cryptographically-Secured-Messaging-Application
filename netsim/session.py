@@ -10,11 +10,9 @@ import hashlib
 class Session:
 
     def __init__(self, key):
-        self.rec_num = 0
-        self.send_num = 0
-
+        self.seq_num = 0    
+        
         #conversion of DH Key to 16 bytes
-
         key = str(key)
         key = key.encode('utf-8')[:16]
         self.key = key
@@ -25,7 +23,9 @@ class Session:
         @Param: data - Data to be encrypted, in bytes
         """
 
-        nonce = self.rec_num.to_bytes(length=10, byteorder='big')
+        copyheader = json.loads(header.decode('utf-8'))
+        ctr = copyheader["nonce"]
+        nonce = ctr.to_bytes(length=10, byteorder='big')
 
         cipher = AES.new(self.key, AES.MODE_CCM, nonce = nonce)
         cipher.update(header)
@@ -38,7 +38,15 @@ class Session:
         """
         @Param: ciphertext - json formatted ciphertext
         """
-        nonce = self.rec_num.to_bytes(length=10, byteorder='big')
+        print("HEADER IN DECRYPT", header)
+        copyheader = json.loads(header.decode('utf-8'))
+        ctr = copyheader["nonce"]
+        
+ 
+        if ctr > self.seq_num:
+            self.seq_num = ctr
+  
+        nonce = self.seq_num.to_bytes(length=10, byteorder='big')
         # b64 = json.loads(ciphertext)
         # json_k = [ 'nonce', 'header', 'ciphertext', 'tag' ]
         # jv = {k:b64decode(b64[k]) for k in json_k}
@@ -46,5 +54,8 @@ class Session:
         cipher = AES.new(self.key, AES.MODE_CCM, nonce=nonce)
         cipher.update(header)
         plaintext = cipher.decrypt_and_verify(ciphertext, tag)
+
+
+        #returns byte string?????
         return plaintext
  

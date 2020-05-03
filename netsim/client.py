@@ -33,42 +33,41 @@ def main():
     while True:
 
         # ========== TODO MAKE THIS LOOK NICE ===============
-
         print("Working with File or Folder?")
-        type = input('> ')
-        if(type=="File"):
+        typee = input('> ')
+        if(typee=="File"):
             print("Upload, Download, Update, or Delete")
             command = input('> ')
-        elif(type=="Folder"):
+
+        elif(typee=="Folder"):
             print("Push, Pull, Update, Make, or Delete?")
             command = input('> ')
 
-
-        if(type=="File" and command=="Upload"):
+        if(typee=="File" and command=="Upload"):
             #Tested and working
             print("Please give the file source")
             src = input('> ')
             plaintext = client.upload_file_helper(src)
-            send_to_server(session, client, type, command, plaintext)
-# #C:/Users/rchen/Documents/AIT Crypto/finalproject/CryptoProject-master/netsim/opopop/qq.txt
+            nonce=session.seq_num + 1
+            send_to_server(session, client, typee, command, plaintext, nonce=nonce)
 
-        elif(type=="File" and command=="Delete"):
+        elif(typee=="File" and command=="Delete"):
             #Tested and Working
             print("Please give the relative directory and file name from server")
             rel_dir = input('> ')
 
             plaintext = rel_dir.encode('utf-8')
-            send_to_server(session, client, type, command, plaintext)
+            send_to_server(session, client, typee, command, plaintext)
 
-        elif(type=="File" and command=="Update"):
+        elif(typee=="File" and command=="Update"):
             #Tested and Working
             print("Please give the file source")
             src = input('> ')
             plaintext = client.upload_file_helper(src)
 
-            send_to_server(session, client, type, command, plaintext)
+            send_to_server(session, client, typee, command, plaintext)
 
-        elif(type=="File" and command=="Download"):
+        elif(typee=="File" and command=="Download"):
             print("Please give the relative directory and file name from server")
             rel_dir = input('> ')
 
@@ -76,7 +75,7 @@ def main():
             save_dir = input('> ')
 
             plaintext = rel_dir.encode('utf-8')
-            send_to_server(session, client, type, command, plaintext)
+            send_to_server(session, client, typee, command, plaintext)
 
             #Listening for Server Response
             status, msg = client.listen()
@@ -96,7 +95,7 @@ def main():
                 plaintext = plaintext.decode("utf-8")
                 header = json.loads(header.decode("utf-8"))
                 src_add = header["from"]
-                type = header["type"]
+                typee = header["type"]
                 command = header["command"]
 
                 title = plaintext.partition("\n")[0]
@@ -106,7 +105,7 @@ def main():
                 f.write(plaintext.partition("\n")[2])
                 f.close()
 
-        elif(type=="Folder" and command=="Push"):
+        elif(typee=="Folder" and command=="Push"):
             print("Please give the folder source")
             src = input('> ')
 
@@ -121,7 +120,7 @@ def main():
             folder_info = str(file_count) + "\n" + folder_title
 
             plaintext = folder_info.encode('utf-8')
-            header = client.create_header(type, command)
+            header = client.create_header(typee, command)
             ciphertext, tag = session.encrypt(header, plaintext)
             msg = client.create_msg(header, ciphertext, tag)
             client.send(msg, SERVER_ADDR)
@@ -137,12 +136,12 @@ def main():
                 file_path = src + "/" +filename
                 plaintext = client.upload_file_helper(file_path)
 
-                header = client.create_header(type, command)
+                header = client.create_header(typee, command)
                 ciphertext, tag = session.encrypt(header, plaintext)
                 msg = client.create_msg(header, ciphertext, tag)
                 client.send(msg, SERVER_ADDR)
 
-        elif(type=="Folder" and command=="Pull"):
+        elif(typee=="Folder" and command=="Pull"):
             print("Please give the relative directory from server")
             rel_dir = input('> ')
 
@@ -151,7 +150,7 @@ def main():
 
             #Send Request to Server
             plaintext = rel_dir.encode('utf-8')
-            header = client.create_header(type, command)
+            header = client.create_header(typee, command)
             ciphertext, tag = session.encrypt(header, plaintext)
             msg = client.create_msg(header, ciphertext, tag)
             client.send(msg, SERVER_ADDR)
@@ -178,7 +177,7 @@ def main():
                 plaintext = plaintext.decode("utf-8")
                 header = json.loads(header.decode("utf-8"))
                 src_add = header["from"]
-                type = header["type"]
+                typee = header["type"]
                 command = header["command"]
 
                 num_files = plaintext.partition("\n")[0]
@@ -204,7 +203,7 @@ def main():
                         plaintext = plaintext.decode("utf-8")
                         header = json.loads(header.decode("utf-8"))
                         src_add = header["from"]
-                        type = header["type"]
+                        typee = header["type"]
                         command = header["command"]
 
                         title = plaintext.partition("\n")[0]
@@ -215,7 +214,7 @@ def main():
                         f.close()
                         count += 1
 
-        elif(type=="Folder" and command=="Update"):
+        elif(typee=="Folder" and command=="Update"):
             print("Please give the folder source")
             src = input('> ')
 
@@ -230,7 +229,7 @@ def main():
             folder_info = str(file_count) + "\n" + folder_title
 
             plaintext = folder_info.encode('utf-8')
-            header = client.create_header(type, command)
+            header = client.create_header(typee, command)
             ciphertext, tag = session.encrypt(header, plaintext)
             msg = client.create_msg(header, ciphertext, tag)
             client.send(msg, SERVER_ADDR)
@@ -246,17 +245,17 @@ def main():
                 file_path = src + "/" +filename
                 plaintext = client.upload_file_helper(file_path)
 
-                header = client.create_header(type, command)
+                header = client.create_header(typee, command)
                 ciphertext, tag = session.encrypt(header, plaintext)
                 msg = client.create_msg(header, ciphertext, tag)
                 client.send(msg, SERVER_ADDR)
 
-        elif(type=="Folder" and command=="Delete"):
+        elif(typee=="Folder" and command=="Delete"):
             print("Please give the relative directory and file name from server")
             rel_dir = input('> ')
             plaintext = rel_dir.encode('utf-8')
 
-            header = client.create_header(type, command)
+            header = client.create_header(typee, command)
             ciphertext, tag = session.encrypt(header, plaintext)
             msg = client.create_msg(header, ciphertext, tag)
             client.send(msg, SERVER_ADDR)
@@ -266,19 +265,15 @@ def main():
             else:
                 print("Error: message could not send. Look up stackoverflow for more info")
 
-        elif(type=="Folder" and command=="Make"):
+        elif(typee=="Folder" and command=="Make"):
             print("Please name the directory")
             name = input('> ')
             plaintext = name.encode('utf-8')
 
-            header = client.create_header(type, command)
+            header = client.create_header(typee, command)
             ciphertext, tag = session.encrypt(header, plaintext)
             msg = client.create_msg(header, ciphertext, tag)
             client.send(msg, SERVER_ADDR)
-
-
-
-#C:/Users/rchen/Documents/AIT Crypto/finalproject/CryptoProject-master/netsim/opopop/
 
 
         if input('Continue? (y/n): ') == 'n': break
@@ -293,24 +288,51 @@ def parse(msg):
     plaintext = plaintext.decode("utf-8")
     header = json.loads(header.decode("utf-8"))
     src_add = header["from"]
-    type = header["type"]
+    typee = header["type"]
     command = header["command"]
 
     return plaintext
 
-def send_to_server(session, client, type, command, plaintext):
+
+#CURRENTLY ONLY RELEVENT TO 3/4 (DOWNLOAD DOESNT WORK WITH THIS) of file commands
+def send_to_server(session, client, typee, command, plaintext, nonce, success=None):
     """
     Helper Function to send message to server
     """
-    header = client.create_header(type, command)
+    header = client.create_header(typee, command, nonce, success)
     ciphertext, tag = session.encrypt(header, plaintext)
     msg = client.create_msg(header, ciphertext, tag)
     client.send(msg, SERVER_ADDR)
-    status = client.listen()
+    status, msg = client.listen()
+
+    #DECRYPT AND INCREMENT
+    msg = json.loads(msg.decode("utf-8"))
+
+    #all of these are in bytes
+    header = b64decode(msg['header'])
+    ciphertext = b64decode(msg['ciphertext'])
+    tag = b64decode(msg['tag'])
+
+    #plaintext in bytes DECRYPTION OF MESSAGE
+    plaintext = session.decrypt(header, ciphertext, tag)
+    plaintext = plaintext.decode("utf-8")
+    header = json.loads(header.decode("utf-8"))
+    src_add = header["from"]
+    typee = header["type"]
+    command = header["command"]
+    nonce = header["nonce"]
+    success = header["success"]
+
+    print("IN CLIENT.PY/FUNC:SEND_TO_SERVER/PLAINTEXT", plaintext)
+    print("IN CLIENT.PY/FUNC:SEND_TO_SERVER/SEQ_NUM", session.seq_num)
+    #msg has to be an encrypted success message from the server.
+    #have to decrypt here, and then update the sequence numbering
+
+
     if status:
         print("Message successfully sent")
     else:
-        print("Error: message could not send. Look up stackoverflow for more info")
+        print("Error: message could not send.")
 
 if __name__ == "__main__":
 
