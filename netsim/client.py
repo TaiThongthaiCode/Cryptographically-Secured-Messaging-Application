@@ -1,12 +1,12 @@
-import os, sys, getopt, time
-
-from base64 import b64encode
-from base64 import b64decode
 import json
 import pyDHE
 import session as s
-from adapter import *
+import os, sys, getopt, time
 
+from adapter import *
+from os import walk
+from base64 import b64encode
+from base64 import b64decode
 from netinterface import network_interface
 
 NET_PATH = './network/'
@@ -14,13 +14,15 @@ SERVER_ADDR = 'A'
 OWN_ADDR = 'B'
 ADDR_SPACE = 'ABC'
 
+#Address of the Client Path
+CLIENT_FOLDER_PATH = "C:/Users/rchen/Documents/AIT Crypto/finalproject/CryptoProject-master/netsim/client/"
+
 NETIF = network_interface(NET_PATH, OWN_ADDR)
 
 def main():
-
     client = Adapter(NET_PATH, OWN_ADDR)
 
-    #Fix this
+    #Creating key with server via Diffie-Hellman Protocol
     User = client.send_public_key(SERVER_ADDR)
     status, msg = client.listen()
     serverkey = int(msg)
@@ -29,310 +31,201 @@ def main():
 
     session = s.Session(SESSIONKEY)
 
-    print('Main loop started...')
+    if not os.path.exists(CLIENT_FOLDER_PATH):
+        server.mk_dir(CLIENT_FOLDER_PATH)
+
+    print("\n")
+    print("Main loop started...")
+    print(2*"\n")
+    print("Welcome to Secure Server Protocol")
+    print("\n")
+    print("Enter 'help' for instructions")
+    print(3*"\n")
+
+
     while True:
+        skip_flag = False
+        user_input = input("> ")
 
-        # ========== TODO MAKE THIS LOOK NICE ===============
-        print("Working with File or Folder?")
-        typee = input('> ')
-        if(typee=="File"):
-            print("Upload, Download, Update, or Delete")
-            command = input('> ')
+        #Help Screen
+        if(user_input == 'help'):
+            print("List of Commands:")
+            print("MKD - Make folder on the Server")
+            print("RMD - Remove a folder from the Server")
+            print("GWD - Asking for name of current folder on Server")
+            print("BWD - Go to previous folder on Server ")
+            print("EWD - Enter a folder on Server")
+            print("LST - List the contents of Folder on Server")
+            print("UPL - Upload a File on the Server")
+            print("DNL - Download a File on the Server")
+            print("RMF - Remove a File on the Server")
+            print("UPD - Update a File on the Server")
+            skip_flag = True
 
-        elif(typee=="Folder"):
-            print("Push, Pull, Update, Make, or Delete?")
-            command = input('> ')
 
-        if(typee=="File" and command=="Upload"):
-            #Tested and working
-            print("Please give the file source")
-            src = input('> ')
-            plaintext = client.upload_file_helper(src)
-            nonce=session.seq_num + 1
-            send_to_server(session, client, typee, command, plaintext, nonce=nonce)
 
-        elif(typee=="File" and command=="Delete"):
-            #Tested and Working
-            print("Please give the relative directory and file name from server")
-            rel_dir = input('> ')
 
-            plaintext = rel_dir.encode('utf-8')
-            send_to_server(session, client, typee, command, plaintext)
 
-        elif(typee=="File" and command=="Update"):
-            #Tested and Working
-            print("Please give the file source")
-            src = input('> ')
-            plaintext = client.upload_file_helper(src)
+        elif(user_input == "MKD"):
+            print("What would you like to name the Folder?")
+            new_folder_name = input('> ')
 
-            send_to_server(session, client, typee, command, plaintext)
+            plaintext = new_folder_name.encode('utf-8')
+            nonce = session.seq_num + 1
 
-        elif(typee=="File" and command=="Download"):
-            print("Please give the relative directory and file name from server")
-            rel_dir = input('> ')
+        elif(user_input == "RMD"):
+            print("What Folder would you like to Delete?")
+            del_folder_name = input('> ')
 
-            print("Please give the location of where you want this saved")
-            save_dir = input('> ')
+            plaintext = del_folder_name.encode('utf-8')
+            nonce = session.seq_num + 1
 
-            plaintext = rel_dir.encode('utf-8')
-            send_to_server(session, client, typee, command, plaintext)
+        elif(user_input == "GWD"):
+            #SEND OVER COMMAND
+            plaintext = user_input.encode('utf-8')
+            nonce = session.seq_num + 1
+            encrypt_and_send(session, client, user_input, nonce, plaintext)
 
-            #Listening for Server Response
+            #LISTENS FOR SUCCESS FLAG
             status, msg = client.listen()
-            if status:
-                client.send("Success", SERVER_ADDR)
-                print("Success: Message received")
 
-                msg = json.loads(msg.decode("utf-8"))
+            #LISTENS FOR FOLDER NAME
+            network_status, server_msg = client.listen()
+            if network_status:
+                header, plaintext = session.parse_msg(server_msg)
 
-                #all of these are in bytes
-                header = b64decode(msg['header'])
-                ciphertext = b64decode(msg['ciphertext'])
-                tag = b64decode(msg['tag'])
+                print("CURRENT FOLDER: " + plaintext)
+                #SEND SUCCESS FLAG
+                send_success(session, client)
+                skip_flag = True
 
-                #plaintext in bytes
-                plaintext = session.decrypt(header, ciphertext, tag)
-                plaintext = plaintext.decode("utf-8")
-                header = json.loads(header.decode("utf-8"))
-                src_add = header["from"]
-                typee = header["type"]
-                command = header["command"]
+        elif(user_input == "BWD"):
+            #SEND OVER COMMAND
+            plaintext = user_input.encode('utf-8')
+            nonce = session.seq_num + 1
 
-                title = plaintext.partition("\n")[0]
-                abs_path = save_dir + title
-                script_dir = os.path.abspath(abs_path)
-                f = open(script_dir, 'a')
-                f.write(plaintext.partition("\n")[2])
-                f.close()
+        elif(user_input == "EWD"):
+            print("Which Folder would you like to ENTER?")
+            enter_folder_name = input('> ')
 
-        elif(typee=="Folder" and command=="Push"):
-            print("Please give the folder source")
-            src = input('> ')
+            plaintext = enter_folder_name.encode('utf-8')
+            nonce = session.seq_num + 1
 
-            if(src[-1] == "/"):
-                src = src[:-1]
+        elif(user_input == "LST"):
+            #SEND OVER COMMAND
+            plaintext = user_input.encode('utf-8')
+            nonce = session.seq_num + 1
+            encrypt_and_send(session, client, user_input, nonce, plaintext)
 
-            #Letting server know info about folder: how many files, name of folder
-            path, dirs, files = next(os.walk(src))
-            file_count = len(files)
-            folder_title = client.getTitle(src)
-
-            folder_info = str(file_count) + "\n" + folder_title
-
-            plaintext = folder_info.encode('utf-8')
-            header = client.create_header(typee, command)
-            ciphertext, tag = session.encrypt(header, plaintext)
-            msg = client.create_msg(header, ciphertext, tag)
-            client.send(msg, SERVER_ADDR)
-            status = client.listen()
-            if status:
-                print("Folder Info")
-            else:
-                print("Error: message could not send. Look up stackoverflow for more info")
-
-            #For each file in directory, upload
-            for filename in os.listdir(src):
-                #filename is just the name of the file
-                file_path = src + "/" +filename
-                plaintext = client.upload_file_helper(file_path)
-
-                header = client.create_header(typee, command)
-                ciphertext, tag = session.encrypt(header, plaintext)
-                msg = client.create_msg(header, ciphertext, tag)
-                client.send(msg, SERVER_ADDR)
-
-        elif(typee=="Folder" and command=="Pull"):
-            print("Please give the relative directory from server")
-            rel_dir = input('> ')
-
-            print("Please give the location of where you want this saved")
-            save_dir = input('> ')
-
-            #Send Request to Server
-            plaintext = rel_dir.encode('utf-8')
-            header = client.create_header(typee, command)
-            ciphertext, tag = session.encrypt(header, plaintext)
-            msg = client.create_msg(header, ciphertext, tag)
-            client.send(msg, SERVER_ADDR)
-            status = client.listen()
-            if status:
-                print("Message successfully sent")
-            else:
-                print("Error: message could not send. Look up stackoverflow for more info")
-
+            #LISTENS FOR SUCCESS FLAG
             status, msg = client.listen()
-            if status:
-                client.send("Success", SERVER_ADDR)
-                print("Success: Message received")
-
-                msg = json.loads(msg.decode("utf-8"))
-
-                #all of these are in bytes
-                header = b64decode(msg['header'])
-                ciphertext = b64decode(msg['ciphertext'])
-                tag = b64decode(msg['tag'])
-
-                #plaintext in bytes
-                plaintext = session.decrypt(header, ciphertext, tag)
-                plaintext = plaintext.decode("utf-8")
-                header = json.loads(header.decode("utf-8"))
-                src_add = header["from"]
-                typee = header["type"]
-                command = header["command"]
-
-                num_files = plaintext.partition("\n")[0]
-                file_name = plaintext.partition("\n")[2]
-
-                new_dir_path = save_dir + file_name
-
-                client.mk_dir(new_dir_path)
+            #LISTENS FOR FOLDER INFO
+            status2, info_msg = client.listen()
+            print("LIST:")
+            if status2:
+                #NOTE: HEDAER IS IN JSON
+                header, plaintext_num = session.parse_msg(info_msg)
+                send_success(session, client)
 
                 count = 0
-                while(count < int(num_files)):
+                while(count < int(plaintext_num)):
                     status, msg = client.listen()
                     if status:
-                        msg = json.loads(msg.decode("utf-8"))
+                        header, file_name = session.parse_msg(msg)
+                        print(file_name)
+                    count += 1
+                    send_success(session, client)
 
-                        #all of these are in bytes
-                        header = b64decode(msg['header'])
-                        ciphertext = b64decode(msg['ciphertext'])
-                        tag = b64decode(msg['tag'])
+            skip_flag = True
 
-                        #plaintext in bytes
-                        plaintext = session.decrypt(header, ciphertext, tag)
-                        plaintext = plaintext.decode("utf-8")
-                        header = json.loads(header.decode("utf-8"))
-                        src_add = header["from"]
-                        typee = header["type"]
-                        command = header["command"]
+        elif(user_input == "UPL" or user_input == "UPD"):
+            print("Which File from Client would you like to Upload/Update?")
+            print("Please give the path relative from Client Folder")
+            file_name = input('> ')
 
-                        title = plaintext.partition("\n")[0]
-                        abs_path = new_dir_path + "/" + title
-                        script_dir = os.path.abspath(abs_path)
-                        f = open(script_dir, 'a')
-                        f.write(plaintext.partition("\n")[2])
-                        f.close()
-                        count += 1
-
-        elif(typee=="Folder" and command=="Update"):
-            print("Please give the folder source")
-            src = input('> ')
-
-            if(src[-1] == "/"):
-                src = src[:-1]
-
-            #Letting server know info about folder: how many files, name of folder
-            path, dirs, files = next(os.walk(src))
-            file_count = len(files)
-            folder_title = client.getTitle(src)
-
-            folder_info = str(file_count) + "\n" + folder_title
-
-            plaintext = folder_info.encode('utf-8')
-            header = client.create_header(typee, command)
-            ciphertext, tag = session.encrypt(header, plaintext)
-            msg = client.create_msg(header, ciphertext, tag)
-            client.send(msg, SERVER_ADDR)
-            status = client.listen()
-            if status:
-                print("Folder Info")
+            path = CLIENT_FOLDER_PATH + file_name
+            if os.path.exists(path):
+                plaintext = session.upload_file_helper(path)
+                nonce = session.seq_num + 1
             else:
-                print("Error: message could not send. Look up stackoverflow for more info")
+                skip_flag = True
+                print("ERROR: No such File in Client!")
 
-            #For each file in directory, upload
-            for filename in os.listdir(src):
-                #filename is just the name of the file
-                file_path = src + "/" +filename
-                plaintext = client.upload_file_helper(file_path)
+        elif(user_input == "DNL"):
+            print("Which File would you like to Download?")
+            file_name = input('> ')
 
-                header = client.create_header(typee, command)
-                ciphertext, tag = session.encrypt(header, plaintext)
-                msg = client.create_msg(header, ciphertext, tag)
-                client.send(msg, SERVER_ADDR)
+            plaintext = file_name.encode('utf-8')
+            nonce = session.seq_num + 1
 
-        elif(typee=="Folder" and command=="Delete"):
-            print("Please give the relative directory and file name from server")
-            rel_dir = input('> ')
-            plaintext = rel_dir.encode('utf-8')
+            encrypt_and_send(session, client, user_input, nonce, plaintext)
 
-            header = client.create_header(typee, command)
-            ciphertext, tag = session.encrypt(header, plaintext)
-            msg = client.create_msg(header, ciphertext, tag)
-            client.send(msg, SERVER_ADDR)
-            status = client.listen()
-            if status:
-                print("Message successfully sent")
+            #LISTENS FOR SUCCESS FLAG
+            status, msg = client.listen()
+            header, plaintext = session.parse_msg(msg)
+            if(plaintext=="SUCESS"):
+                #Listens for File
+                status2, file = client.listen()
+                if status2:
+                    header, plaintext = session.parse_msg(file)
+                    title = plaintext.partition("\n")[0]
+                    abs_path = CLIENT_FOLDER_PATH + title
+                    script_dir = os.path.abspath(abs_path)
+                    f = open(script_dir, 'a')
+                    f.write(plaintext.partition("\n")[2])
+                    f.close()
+                skip_flag = True
             else:
-                print("Error: message could not send. Look up stackoverflow for more info")
+                skip_flag = True
+                print(plaintext)
 
-        elif(typee=="Folder" and command=="Make"):
-            print("Please name the directory")
-            name = input('> ')
-            plaintext = name.encode('utf-8')
+        elif(user_input == "RMF"):
+            print("Which File would you like to Remove from Server?")
+            file_name = input('> ')
+            plaintext = file_name.encode('utf-8')
+            nonce = session.seq_num + 1
 
-            header = client.create_header(typee, command)
-            ciphertext, tag = session.encrypt(header, plaintext)
-            msg = client.create_msg(header, ciphertext, tag)
-            client.send(msg, SERVER_ADDR)
-
-
-        if input('Continue? (y/n): ') == 'n': break
-
-def parse(msg):
-    header = b64decode(msg['header'])
-    ciphertext = b64decode(msg['ciphertext'])
-    tag = b64decode(msg['tag'])
-
-    #plaintext in bytes
-    plaintext = session.decrypt(header, ciphertext, tag)
-    plaintext = plaintext.decode("utf-8")
-    header = json.loads(header.decode("utf-8"))
-    src_add = header["from"]
-    typee = header["type"]
-    command = header["command"]
-
-    return plaintext
+        else:
+            print("Input Not Defined. Please Type 'help' for commands")
+            skip_flag = True
 
 
-#CURRENTLY ONLY RELEVENT TO 3/4 (DOWNLOAD DOESNT WORK WITH THIS) of file commands
-def send_to_server(session, client, typee, command, plaintext, nonce, success=None):
-    """
-    Helper Function to send message to server
-    """
-    header = client.create_header(typee, command, nonce, success)
+
+        if(skip_flag == False):
+            encrypt_and_send(session, client, user_input, nonce, plaintext)
+            status, msg = client.listen()
+
+            #Decrypt from the server and increment counter
+            #NOTE: HEADER IN JSON FORMAT
+            header, plaintext = session.parse_msg(msg)
+
+            print(plaintext)
+            print("NONCE ", session.seq_num)
+
+
+            #if input('Continue? (y/n): ') == 'n': break
+
+
+def encrypt_and_send(session, client, user_input, nonce, plaintext):
+    header = session.create_header(user_input, OWN_ADDR, nonce)
     ciphertext, tag = session.encrypt(header, plaintext)
-    msg = client.create_msg(header, ciphertext, tag)
+    msg = session.create_msg(header, ciphertext, tag)
     client.send(msg, SERVER_ADDR)
-    status, msg = client.listen()
 
-    #DECRYPT AND INCREMENT
-    msg = json.loads(msg.decode("utf-8"))
+def send_success(session, client):
+    seq_num = session.seq_num
 
-    #all of these are in bytes
-    header = b64decode(msg['header'])
-    ciphertext = b64decode(msg['ciphertext'])
-    tag = b64decode(msg['tag'])
+    response_header = session.create_header(None, OWN_ADDR, nonce=seq_num, success=True)
+    plaintext = b"SUCCESS"
+    ciphertext, tag = session.encrypt(response_header, plaintext)
 
-    #plaintext in bytes DECRYPTION OF MESSAGE
-    plaintext = session.decrypt(header, ciphertext, tag)
-    plaintext = plaintext.decode("utf-8")
-    header = json.loads(header.decode("utf-8"))
-    src_add = header["from"]
-    typee = header["type"]
-    command = header["command"]
-    nonce = header["nonce"]
-    success = header["success"]
-
-    print("IN CLIENT.PY/FUNC:SEND_TO_SERVER/PLAINTEXT", plaintext)
-    print("IN CLIENT.PY/FUNC:SEND_TO_SERVER/SEQ_NUM", session.seq_num)
-    #msg has to be an encrypted success message from the server.
-    #have to decrypt here, and then update the sequence numbering
+    msg = session.create_msg(response_header, ciphertext, tag)
+    client.send(msg, SERVER_ADDR)
 
 
-    if status:
-        print("Message successfully sent")
-    else:
-        print("Error: message could not send.")
+
+
+
 
 if __name__ == "__main__":
 
