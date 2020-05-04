@@ -109,7 +109,6 @@ class Session:
         return plaintext
 
     def parse_msg(self, msg):
-        print("MSG TYPE: ", type(msg))
         msg = json.loads(msg.decode("utf-8"))
         header = b64decode(msg['header'])
         ciphertext = b64decode(msg['ciphertext'])
