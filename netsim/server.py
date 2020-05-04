@@ -10,7 +10,7 @@ from base64 import b64encode
 from netinterface import network_interface
 
 #Path of the Server File
-RELATIVE_SERVER_PATH = "C:/Users/rchen/Documents/AIT Crypto/finalproject/CryptoProject-master/netsim/server/"
+RELATIVE_SERVER_PATH = "/Users/Tai/Desktop/crypto_project/netsim/server/"
 
 NET_PATH = './network/'
 OWN_ADDR = 'A'
@@ -46,7 +46,7 @@ def main():
             nonce = header["nonce"]
             success = header["success"]
 
-            print("NONCE ", session.seq_num)
+            #print("NONCE ", session.seq_num)
             
             if(command=="MKD"):
 

@@ -15,7 +15,7 @@ OWN_ADDR = 'B'
 ADDR_SPACE = 'ABC'
 
 #Address of the Client Path
-CLIENT_FOLDER_PATH = "C:/Users/rchen/Documents/AIT Crypto/finalproject/CryptoProject-master/netsim/client/"
+CLIENT_FOLDER_PATH = "/Users/Tai/Desktop/crypto_project/netsim/client/"
 
 NETIF = network_interface(NET_PATH, OWN_ADDR)
 
@@ -199,8 +199,8 @@ def main():
             #NOTE: HEADER IN JSON FORMAT
             header, plaintext = session.parse_msg(msg)
 
-            print(plaintext)
-            print("NONCE ", session.seq_num)
+            #print(plaintext)
+            #print("NONCE ", session.seq_num)
 
 
             #if input('Continue? (y/n): ') == 'n': break
