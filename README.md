@@ -1,6 +1,7 @@
 # CryptoProject
 
-This program simulates a network whereby a client can send a cryptographically secure message to the server.  
+This program simulates a network whereby a client can send a cryptographically secure message to the server.  Read the design document for details of 
+the application implementation.
 
 Running the Program Directions:
 1. Go to the netsim directory.
