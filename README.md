@@ -1,4 +1,7 @@
 # CryptoProject
+
+This program simulates a network whereby a client can send a cryptographically secure message to the server.  
+
 Running the Program Directions:
 1. Go to the netsim directory.
 2. Edit client.py and change 'CLIENT_FOLDER_PATH' to your desired client folder location
